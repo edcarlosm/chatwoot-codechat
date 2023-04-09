@@ -138,7 +138,47 @@ export const eventCodeChat = async (body: any) => {
         return await createMessage(getConversion, bodyMessage, "incoming");
       }
     }
+//--inicio
+    export const eventCodeChat = async (body: any) => {
+  try {
+    const instance = body.instance
+    if (body.event === "messages.upsert" && !body.data.key.fromMe) {
 
+      const getConversion = await createConversation(body);
+
+      if (!getConversion) {
+        console.log("🚨 Erro ao criar conversa");
+        return;
+      }
+
+      const isMedia = isMediaMessage(body.data.message);
+      const bodyMessage = getConversationMessage(body.data.message);
+
+      if (isMedia) {
+        const downloadBase64 = await getBase64FromMediaMessage(body.data.key.id, instance);
+        const random = Math.random().toString(36).substring(7);
+        const nameFile = `${random}.${mimeTypes.extension(
+          downloadBase64.data.mimetype
+        )}`;
+        const attachments = [
+          {
+            content: downloadBase64.data.base64,
+            encoding: "base64",
+            filename: downloadBase64.data?.fileName || nameFile,
+          },
+        ];
+        return await createMessage(
+          getConversion,
+          bodyMessage,
+          "outgoing",
+          attachments
+        );
+      } else {
+        return await createMessage(getConversion, bodyMessage, "outgoing");
+      }
+    }
+
+//--fim    
     if (body.event === "qrcode.updated") {
       if (body.data.statusCode === 500) {
         const erroQRcode = `🚨 Limite de geração de QRCode atingido, para gerar um novo QRCode, envie a mensagem /iniciar novamente.`;
